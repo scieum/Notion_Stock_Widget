@@ -106,6 +106,25 @@ export async function fetchTop(market: Market): Promise<RankedQuote[]> {
   return ((await res.json()) as { items: RankedQuote[] }).items;
 }
 
+export interface Sentiment {
+  market: Market;
+  /** 0(극단적 공포)~100(극단적 탐욕) */
+  index: number;
+  label: string;
+  up: number;
+  down: number;
+  neutral: number;
+  count: number;
+  avgChangeRate: number;
+}
+
+/** 공포·탐욕 지수(탐욕지수) — 대형주 바스켓 등락 기반. */
+export async function fetchSentiment(market: Market): Promise<Sentiment> {
+  const res = await fetch(api(`/api/sentiment?market=${market}`));
+  if (!res.ok) throw new Error(`sentiment ${res.status}`);
+  return (await res.json()) as Sentiment;
+}
+
 export interface CandleResponse {
   ticker: string;
   interval: CandleInterval;

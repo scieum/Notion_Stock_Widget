@@ -708,6 +708,59 @@ body {
   border-radius: 9999px;
 }
 
+/* ===== 탐욕지수(공포·탐욕) 게이지 ===== */
+.fg-gauge {
+  position: relative;
+  width: 100%;
+  max-width: 280px;
+  margin: 4px auto 0;
+}
+.fg-svg {
+  display: block;
+  width: 100%;
+}
+.fg-needle {
+  stroke: var(--fg);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+.fg-hub {
+  fill: var(--fg);
+}
+.fg-readout {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.1;
+}
+.fg-value {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  font-variant-numeric: tabular-nums;
+}
+.fg-label {
+  font-size: 13px;
+  font-weight: 700;
+}
+.fg-breadth {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+.fg-breadth .up {
+  color: var(--up);
+}
+.fg-breadth .down {
+  color: var(--down);
+}
+
 /* ===== 캔들 차트 ===== */
 .chart-head {
   display: flex;

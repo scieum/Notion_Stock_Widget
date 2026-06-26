@@ -4,6 +4,7 @@ import { CandleInterval, Market } from "@toss-notion/core";
 import { config } from "./config.js";
 import { createTossClient } from "./toss/client.js";
 import { QuoteCache } from "./cache/quote-cache.js";
+import { SECURITIES } from "./directory.js";
 import { resolveByQuery, resolveInstrument } from "./instruments.js";
 import { createNotionGateways } from "./notion/factory.js";
 import { resolveWatchlist } from "./watchlist-service.js";
@@ -152,6 +153,47 @@ app.get("/api/etf-after-hours", async (_req, res) => {
   } catch (err) {
     log.error("[api] /api/etf-after-hours 실패", { msg: (err as Error).message });
     res.status(502).json({ error: "etf after-hours failed" });
+  }
+});
+
+// 공포·탐욕 지수(탐욕지수) — 대형주 바스켓의 실제 등락으로 시장 심리를 0~100으로.
+// 등락률은 getQuotes(라이브=토스 전일종가 기반 정확)에서 받아 TOP100 기준가 버그를 피한다.
+app.get("/api/sentiment", async (req, res) => {
+  const parsed = Market.safeParse(String(req.query.market ?? "domestic"));
+  if (!parsed.success) {
+    res.status(400).json({ error: "market must be domestic|overseas" });
+    return;
+  }
+  try {
+    const basket = SECURITIES.filter((s) => !s.isEtf && s.market === parsed.data && s.marketCap > 0)
+      .sort((a, b) => b.marketCap - a.marketCap)
+      .slice(0, 20)
+      .map((s) => s.ticker);
+    const quotes = await quoteCache.getQuotes(basket);
+    const rates = quotes.map((q) => q.changeRate);
+    const total = rates.length || 1;
+    const up = rates.filter((r) => r > 0).length;
+    const down = rates.filter((r) => r < 0).length;
+    const breadth = up / total; // 0..1 (상승 종목 비중)
+    const avg = rates.reduce((s, r) => s + r, 0) / total;
+    const momentum = Math.max(0, Math.min(1, 0.5 + avg * 10)); // ±0.05 → 0..1
+    // breadth(폭) 0.6 + momentum(강도) 0.4 가중 → 0..100
+    const index = Math.round(100 * (0.6 * breadth + 0.4 * momentum));
+    const label =
+      index < 20 ? "극단적 공포" : index < 40 ? "공포" : index < 60 ? "중립" : index < 80 ? "탐욕" : "극단적 탐욕";
+    res.json({
+      market: parsed.data,
+      index,
+      label,
+      up,
+      down,
+      neutral: total - up - down,
+      count: total,
+      avgChangeRate: avg,
+    });
+  } catch (err) {
+    log.error("[api] /api/sentiment 실패", { msg: (err as Error).message });
+    res.status(502).json({ error: "sentiment failed" });
   }
 });
 

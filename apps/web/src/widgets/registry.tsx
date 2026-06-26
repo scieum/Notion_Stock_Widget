@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { CandleInterval } from "@toss-notion/core";
 import { CandleChartWidget } from "./CandleChartWidget.js";
 import { EtfAfterHoursWidget } from "./EtfAfterHoursWidget.js";
+import { FearGreedWidget } from "./FearGreedWidget.js";
 import { HeatmapWidget } from "./HeatmapWidget.js";
 import { HoldingsWidget } from "./HoldingsWidget.js";
 import { TickerWidget } from "./TickerWidget.js";
@@ -32,6 +33,8 @@ export type WidgetTypeId =
   | "top-treemap-overseas"
   | "top-table-domestic"
   | "top-table-overseas"
+  | "fear-greed-domestic"
+  | "fear-greed-overseas"
   | "candle";
 
 /** 주제별 카테고리 (Explore 그룹·정렬 순서) */
@@ -140,6 +143,26 @@ export const WIDGET_TYPES: WidgetTypeDef[] = [
     defaultConfig: { title: "미국 실시간 TOP 100" },
     fields: [{ kind: "text", key: "title", label: "제목" }],
     render: (cfg) => <TopTableWidget market="overseas" title={cfg.title} />,
+  },
+  {
+    id: "fear-greed-domestic",
+    name: "국내 탐욕지수",
+    description: "공포·탐욕 지수 — 대형주 등락 기반 시장 심리(0~100)",
+    category: "시장 전체",
+    accent: "#fdeef0",
+    defaultConfig: { title: "국내 탐욕지수" },
+    fields: [{ kind: "text", key: "title", label: "제목" }],
+    render: (cfg) => <FearGreedWidget market="domestic" title={cfg.title} />,
+  },
+  {
+    id: "fear-greed-overseas",
+    name: "미국 탐욕지수",
+    description: "공포·탐욕 지수 — 미국 대형주 등락 기반 시장 심리(0~100)",
+    category: "시장 전체",
+    accent: "#eef0fd",
+    defaultConfig: { title: "미국 탐욕지수" },
+    fields: [{ kind: "text", key: "title", label: "제목" }],
+    render: (cfg) => <FearGreedWidget market="overseas" title={cfg.title} />,
   },
   {
     id: "heatmap",
