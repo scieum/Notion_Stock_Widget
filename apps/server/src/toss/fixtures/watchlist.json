@@ -1,0 +1,10 @@
+[
+  { "query": "삼성전자", "order": 1 },
+  { "query": "SK하이닉스", "order": 2 },
+  { "query": "000270", "order": 3 },
+  { "query": "카카오", "order": 4 },
+  { "query": "크래프톤", "order": 5 },
+  { "query": "NVDA", "order": 6 },
+  { "query": "TSLA", "order": 7 },
+  { "query": "테슬라", "order": 8 }
+]

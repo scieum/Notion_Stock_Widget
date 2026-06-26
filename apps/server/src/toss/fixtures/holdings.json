@@ -1,0 +1,7 @@
+[
+  { "ticker": "005930", "quantity": 30, "avgPrice": 68000, "currency": "KRW" },
+  { "ticker": "000660", "quantity": 10, "avgPrice": 165000, "currency": "KRW" },
+  { "ticker": "0167A0", "quantity": 100, "avgPrice": 11800, "currency": "KRW" },
+  { "ticker": "NVDA", "quantity": 12, "avgPrice": 142.5, "currency": "USD" },
+  { "ticker": "AAPL", "quantity": 8, "avgPrice": 195.2, "currency": "USD" }
+]

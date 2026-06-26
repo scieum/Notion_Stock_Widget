@@ -1,0 +1,7 @@
+[
+  { "ticker": "005930", "price": 74200, "changeRate": 0.0123 },
+  { "ticker": "000660", "price": 178500, "changeRate": -0.0081 },
+  { "ticker": "035420", "price": 215000, "changeRate": 0.0045 },
+  { "ticker": "0167A0", "price": 12340, "changeRate": 0.0210 },
+  { "ticker": "373220", "price": 412000, "changeRate": -0.0152 }
+]

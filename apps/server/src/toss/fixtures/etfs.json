@@ -1,0 +1,42 @@
+[
+  {
+    "ticker": "0167A0",
+    "name": "SOL AI반도체TOP2플러스",
+    "market": "domestic",
+    "constituents": [
+      { "ticker": "005930", "weight": 0.25 },
+      { "ticker": "000660", "weight": 0.25 },
+      { "ticker": "NVDA", "weight": 0.25 },
+      { "ticker": "AVGO", "weight": 0.25 }
+    ]
+  },
+  {
+    "ticker": "069500",
+    "name": "KODEX 200",
+    "market": "domestic",
+    "constituents": [
+      { "ticker": "005930", "weight": 0.3 },
+      { "ticker": "000660", "weight": 0.1 },
+      { "ticker": "035420", "weight": 0.05 },
+      { "ticker": "005380", "weight": 0.05 },
+      { "ticker": "000270", "weight": 0.04 },
+      { "ticker": "105560", "weight": 0.04 },
+      { "ticker": "207940", "weight": 0.04 },
+      { "ticker": "012450", "weight": 0.03 }
+    ]
+  },
+  {
+    "ticker": "360750",
+    "name": "TIGER 미국S&P500",
+    "market": "domestic",
+    "constituents": [
+      { "ticker": "NVDA", "weight": 0.07 },
+      { "ticker": "MSFT", "weight": 0.07 },
+      { "ticker": "AAPL", "weight": 0.06 },
+      { "ticker": "AMZN", "weight": 0.04 },
+      { "ticker": "META", "weight": 0.03 },
+      { "ticker": "GOOGL", "weight": 0.02 },
+      { "ticker": "AVGO", "weight": 0.02 }
+    ]
+  }
+]

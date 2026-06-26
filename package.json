@@ -1,0 +1,21 @@
+{
+  "name": "toss-notion-widget",
+  "private": true,
+  "version": "0.1.0",
+  "description": "토스증권 × Notion 주식 위젯 — 시세 위젯 + 종목 DB 현재가 동기화",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "dev:server": "npm run dev --workspace apps/server",
+    "dev:web": "npm run dev --workspace apps/web"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
