@@ -262,16 +262,106 @@ interface CandleItem {
 }
 
 /**
- * 앱 간격 → 토스 캔들 interval 토큰. 스펙 확정 전 추정값(§12: OpenAPI 재확인).
- * 토스 캔들은 봉 단위라 '틱'은 최소 분봉으로 근사(실패 시 합성 폴백).
+ * 앱 간격 → 토스가 실제 지원하는 캔들 주기. 토스 Open API는 `1m`/`1d`만 지원한다
+ * (그 외 interval은 400 "지원하지 않는 캔들 주기"). 그래서:
+ *  - '틱'은 분봉(1m)으로 근사.
+ *  - '주/월'은 일봉(1d)을 받아 서버에서 집계(AGGREGATE)한다 → 실데이터로 스케일 일관.
  */
-const TOSS_INTERVAL: Record<CandleInterval, string> = {
+const TOSS_BASE_INTERVAL: Record<CandleInterval, "1m" | "1d"> = {
   tick: "1m",
   "1m": "1m",
   "1d": "1d",
-  "1w": "1w",
-  "1M": "1M",
+  "1w": "1d",
+  "1M": "1d",
 };
+
+/** 일봉을 어느 단위로 묶을지(주/월). 나머지는 집계 없음. */
+const AGGREGATE: Partial<Record<CandleInterval, "week" | "month">> = {
+  "1w": "week",
+  "1M": "month",
+};
+
+/** 토스 일봉 최대 응답 수(요청과 무관하게 200으로 캡됨). 집계 시 이만큼 받아 묶는다. */
+const TOSS_MAX_DAILY = 200;
+
+/** 토스 캔들 응답(JSON) → Candle[]. O/H/L 누락은 종가로 보정, 오래된→최신 정렬. */
+function parseTossCandles(raw: CandleItem[], currency: string): Candle[] {
+  const round = (n: number) => roundPrice(n, currency);
+  const out: Candle[] = [];
+  for (const c of raw) {
+    const close = num(c.closePrice);
+    if (!close || close <= 0) continue;
+    const open = num(c.openPrice) ?? close;
+    const high = num(c.highPrice) ?? Math.max(open, close);
+    const low = num(c.lowPrice) ?? Math.min(open, close);
+    const vol = num(c.tradingVolume);
+    const ts = Date.parse(c.timestamp);
+    out.push(
+      CandleSchema.parse({
+        time: Number.isFinite(ts) ? ts : Date.now(),
+        open: round(open),
+        high: round(Math.max(high, open, close)),
+        low: round(Math.min(low, open, close)),
+        close: round(close),
+        ...(vol != null && vol >= 0 ? { volume: vol } : {}),
+      }),
+    );
+  }
+  out.sort((a, b) => a.time - b.time);
+  return out;
+}
+
+/**
+ * 일봉(오래된→최신)을 주/월 봉으로 묶는다.
+ * open=구간 첫봉 시가, close=마지막봉 종가, high=max, low=min, volume=합. time=구간 첫봉 시각.
+ */
+function aggregateCandles(daily: Candle[], unit: "week" | "month"): Candle[] {
+  const keyOf = (t: number): number => {
+    const d = new Date(t);
+    if (unit === "month") return d.getFullYear() * 12 + d.getMonth();
+    const dow = (d.getDay() + 6) % 7; // 월=0
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate() - dow).getTime(); // 그 주 월요일
+  };
+  const buckets = new Map<number, Candle[]>();
+  const order: number[] = [];
+  for (const c of daily) {
+    const k = keyOf(c.time);
+    let g = buckets.get(k);
+    if (!g) {
+      g = [];
+      buckets.set(k, g);
+      order.push(k);
+    }
+    g.push(c);
+  }
+  const out: Candle[] = [];
+  for (const k of order) {
+    const g = buckets.get(k)!;
+    let high = -Infinity;
+    let low = Infinity;
+    let vol = 0;
+    let hasVol = false;
+    for (const c of g) {
+      if (c.high > high) high = c.high;
+      if (c.low < low) low = c.low;
+      if (c.volume != null) {
+        vol += c.volume;
+        hasVol = true;
+      }
+    }
+    out.push(
+      CandleSchema.parse({
+        time: g[0]!.time,
+        open: g[0]!.open,
+        high,
+        low,
+        close: g[g.length - 1]!.close,
+        ...(hasVol ? { volume: vol } : {}),
+      }),
+    );
+  }
+  return out;
+}
 interface AccountItem {
   accountNo: string;
   accountSeq: number;
@@ -504,41 +594,21 @@ export function createLiveTossClient(config: Config): TossClient {
       if (!TOSS_SYMBOL.test(ticker)) {
         return { candles: synthCandles(ticker, interval, count, Date.now()), synthetic: true };
       }
+      const unit = AGGREGATE[interval]; // 주/월이면 일봉을 묶는다
+      const tossInterval = TOSS_BASE_INTERVAL[interval];
+      // 집계 간격은 일봉을 최대치로 받아 묶는다(주 ~40·월 ~10개 확보).
+      const fetchCount = unit ? TOSS_MAX_DAILY : count;
       try {
-        const token = TOSS_INTERVAL[interval];
         const json = await withRetry(() =>
           authedGet<unknown>(
-            `/api/v1/candles?symbol=${encodeURIComponent(ticker)}&interval=${token}&count=${count}`,
+            `/api/v1/candles?symbol=${encodeURIComponent(ticker)}&interval=${tossInterval}&count=${fetchCount}`,
           ),
         );
         const result = unwrap<{ candles?: CandleItem[] }>(json);
-        const raw = result?.candles ?? [];
         const currency = getSecurity(ticker)?.currency ?? "KRW";
-        const round = (n: number) => roundPrice(n, currency);
-        const candles: Candle[] = [];
-        for (const c of raw) {
-          const close = num(c.closePrice);
-          if (!close || close <= 0) continue;
-          // O/H/L 누락 시 종가로 대체(최소한 선으로는 보이도록).
-          const open = num(c.openPrice) ?? close;
-          const high = num(c.highPrice) ?? Math.max(open, close);
-          const low = num(c.lowPrice) ?? Math.min(open, close);
-          const vol = num(c.tradingVolume);
-          const ts = Date.parse(c.timestamp);
-          candles.push(
-            CandleSchema.parse({
-              time: Number.isFinite(ts) ? ts : Date.now(),
-              open: round(open),
-              high: round(Math.max(high, open, close)),
-              low: round(Math.min(low, open, close)),
-              close: round(close),
-              ...(vol != null && vol >= 0 ? { volume: vol } : {}),
-            }),
-          );
-        }
+        let candles = parseTossCandles(result?.candles ?? [], currency);
+        if (unit) candles = aggregateCandles(candles, unit); // 일봉 → 주/월 봉
         if (candles.length > 0) {
-          // 토스 응답은 최신순 → 오래된→최신으로 정렬.
-          candles.sort((a, b) => a.time - b.time);
           return { candles: candles.slice(-count), synthetic: false };
         }
         log.warn("[toss] 캔들 빈 응답 — 합성 폴백", { ticker, interval });
