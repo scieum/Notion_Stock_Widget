@@ -1,9 +1,6 @@
-import { useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { getWidgetType } from "../widgets/registry.js";
 import { decodeConfig } from "../store/instances.js";
-import { hasCredentials, isSkipped } from "../store/credentials.js";
-import { Connect } from "./Connect.js";
 import { FitScaler } from "./FitScaler.js";
 
 /**
@@ -15,18 +12,8 @@ export function Embed() {
   const [params] = useSearchParams();
   const def = getWidgetType(type);
   const config = decodeConfig(params.get("d") ?? "");
-  // 첫 로드 시 키가 없고 둘러보기도 안 했으면 BYOK 등록 화면을 먼저 보여준다.
-  const [ready, setReady] = useState(() => hasCredentials() || isSkipped());
 
   if (!def) return <div className="embed-root muted">알 수 없는 위젯: {type}</div>;
-
-  if (!ready) {
-    return (
-      <div className="embed-root">
-        <Connect embedded onDone={() => setReady(true)} />
-      </div>
-    );
-  }
 
   return (
     <FitScaler>

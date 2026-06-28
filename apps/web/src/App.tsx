@@ -12,9 +12,6 @@ export function App() {
           <NavLink to="/" end className={({ isActive }) => (isActive ? "active" : "")}>
             My Widgets
           </NavLink>
-          <NavLink to="/connect" className={({ isActive }) => (isActive ? "active" : "")}>
-            증권사 연결
-          </NavLink>
           <span className="nav-soon">My Dashboards</span>
         </nav>
         <span className="badge">fixture</span>
