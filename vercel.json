@@ -3,6 +3,7 @@
   "installCommand": "npm install",
   "buildCommand": "npm run build --workspace packages/core && npm run build --workspace apps/server && npm run build --workspace apps/web",
   "outputDirectory": "apps/web/dist",
+  "regions": ["icn1"],
   "functions": {
     "api/[...path].ts": {
       "maxDuration": 15
