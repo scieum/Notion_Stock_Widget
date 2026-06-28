@@ -1,6 +1,6 @@
-import { readFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import holdingsFixture from "../toss/fixtures/holdings.json" with { type: "json" };
+import watchlistFixture from "../toss/fixtures/watchlist.json" with { type: "json" };
+import etfsFixture from "../toss/fixtures/etfs.json" with { type: "json" };
 import {
   EtfDefSchema,
   NotionStockRowSchema,
@@ -20,14 +20,12 @@ import type {
  * fixture 게이트웨이 — Notion 토큰/DB ID 수령 전 전체 파이프라인을 굴린다.
  * 종목 DB는 토스 보유 fixture(holdings.json)로 대체, 관심/ETF는 전용 fixture.
  */
-const fixturesDir = join(dirname(fileURLToPath(import.meta.url)), "..", "toss", "fixtures");
-
 export class FixtureStockGateway implements NotionStockGateway {
   /** fixture에는 Notion이 없으니 쓰기는 메모리에만 반영(검증·로그용). */
   private readonly written = new Map<string, number>();
 
   async listStockRows(): Promise<NotionStockRow[]> {
-    const raw = JSON.parse(await readFile(join(fixturesDir, "holdings.json"), "utf8")) as Array<{
+    const raw = holdingsFixture as Array<{
       ticker: string;
       quantity: number;
       avgPrice?: number;
@@ -54,7 +52,7 @@ export class FixtureStockGateway implements NotionStockGateway {
 
 export class FixtureWatchlistGateway implements NotionWatchlistGateway {
   async listWatchlist(): Promise<WatchlistEntry[]> {
-    const raw = JSON.parse(await readFile(join(fixturesDir, "watchlist.json"), "utf8")) as Array<{
+    const raw = watchlistFixture as Array<{
       query: string;
       order?: number;
     }>;
@@ -68,7 +66,6 @@ export class FixtureWatchlistGateway implements NotionWatchlistGateway {
 
 export class FixtureEtfGateway implements NotionEtfGateway {
   async listEtfs(): Promise<EtfDef[]> {
-    const raw = JSON.parse(await readFile(join(fixturesDir, "etfs.json"), "utf8"));
-    return EtfDefSchema.array().parse(raw);
+    return EtfDefSchema.array().parse(etfsFixture);
   }
 }

@@ -1,6 +1,5 @@
-import { readFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import quotesFixture from "./fixtures/quotes.json" with { type: "json" };
+import holdingsFixture from "./fixtures/holdings.json" with { type: "json" };
 import {
   CandleSchema,
   QuoteSchema,
@@ -116,8 +115,6 @@ function synthCandles(ticker: string, interval: CandleInterval, count: number, n
   return out;
 }
 
-const fixturesDir = join(dirname(fileURLToPath(import.meta.url)), "fixtures");
-
 /** 티커 기반 결정론적 등락률 — fixture에서 안정적·다양한 시세를 합성하기 위함(±6%). */
 function seededRate(ticker: string): number {
   let h = 2166136261;
@@ -171,7 +168,7 @@ export function createFixtureTossClient(now: () => number = Date.now): TossClien
   return {
     async getQuotes(tickers) {
       // quotes.json은 데모용 고정 오버라이드. 없는 종목은 디렉터리에서 합성.
-      const raw = JSON.parse(await readFile(join(fixturesDir, "quotes.json"), "utf8")) as Array<{
+      const raw = quotesFixture as Array<{
         ticker: string;
         price: number;
         changeRate: number;
@@ -187,7 +184,7 @@ export function createFixtureTossClient(now: () => number = Date.now): TossClien
       return out;
     },
     async getHoldings() {
-      const raw = JSON.parse(await readFile(join(fixturesDir, "holdings.json"), "utf8")) as Array<{
+      const raw = holdingsFixture as Array<{
         ticker: string;
         quantity: number;
         avgPrice?: number;

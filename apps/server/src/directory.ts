@@ -1,6 +1,4 @@
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import krMasterRaw from "./toss/fixtures/kr-stocks.json" with { type: "json" };
 import type { Market } from "@toss-notion/core";
 import { log } from "./util/logger.js";
 
@@ -359,10 +357,9 @@ interface MasterRow {
   name: string;
   sector: string;
 }
-const masterPath = join(dirname(fileURLToPath(import.meta.url)), "toss/fixtures/kr-stocks.json");
 function loadKrMaster(): Security[] {
   try {
-    const rows = JSON.parse(readFileSync(masterPath, "utf8")) as MasterRow[];
+    const rows = krMasterRaw as MasterRow[];
     return rows.map((r) => ({
       ticker: r.code,
       name: r.name,
