@@ -106,7 +106,7 @@ export interface NotionStatus {
 
 /** 서버의 Notion 연결 상태(위젯 DB 연결 안내용). */
 export async function fetchNotionStatus(): Promise<NotionStatus> {
-  const res = await fetch(api("/api/notion/status"));
+  const res = await fetch(api("/api/notion-status"));
   if (!res.ok) throw new Error(`notion status ${res.status}`);
   return (await res.json()) as NotionStatus;
 }

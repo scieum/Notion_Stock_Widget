@@ -75,7 +75,8 @@ export function createApp(): Express {
   });
 
   // 서버 Notion 연결 상태 — 위젯 설정 UI 안내용. 토큰 값 자체는 절대 노출하지 않는다(§6/C1).
-  app.get("/api/notion/status", (_req, res) => {
+  // 경로는 단일 세그먼트로 유지(Vercel 서버리스 catch-all이 /api/* 1단계만 라우팅).
+  app.get("/api/notion-status", (_req, res) => {
     res.json({
       hasToken: notionHasToken(config),
       defaultStockDb: Boolean(config.NOTION_STOCK_DB_ID),
