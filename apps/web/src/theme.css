@@ -664,6 +664,55 @@ body {
   container-type: inline-size;
 }
 
+/* ===== 증권사 연결 (BYOK) ===== */
+.connect {
+  display: flex;
+  justify-content: center;
+  padding: 8px;
+}
+.connect:not(.embedded) {
+  padding: 32px 16px;
+}
+.connect-card {
+  width: 100%;
+  max-width: 420px;
+}
+.connect-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0 0 2px;
+}
+.connect-sub {
+  margin: 0 0 14px;
+  font-size: 13px;
+}
+.connect-brokers {
+  margin-bottom: 14px;
+}
+.connect-brokers button:disabled {
+  color: var(--muted-light);
+  cursor: not-allowed;
+}
+.connect-privacy {
+  line-height: 1.5;
+  margin: 2px 0 14px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-alt);
+}
+.connect-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.connect-skip {
+  width: auto;
+  margin-top: 0;
+  margin-left: auto;
+}
+
 /* ===== Table head (holdings / etf / rank) ===== */
 .quote-table th {
   padding: 4px 2px 8px;

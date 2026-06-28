@@ -6,6 +6,7 @@ import { DataProvider } from "./data/DataProvider.js";
 import { Home } from "./pages/Home.js";
 import { Editor } from "./pages/Editor.js";
 import { Embed } from "./pages/Embed.js";
+import { Connect } from "./pages/Connect.js";
 import "./theme.css";
 
 const router = createBrowserRouter([
@@ -13,6 +14,7 @@ const router = createBrowserRouter([
     element: <App />,
     children: [
       { path: "/", element: <Home /> },
+      { path: "/connect", element: <Connect /> },
       { path: "/edit/:id", element: <Editor /> },
     ],
   },
