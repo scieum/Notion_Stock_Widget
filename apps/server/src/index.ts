@@ -25,6 +25,30 @@ import { log } from "./util/logger.js";
 const app = express();
 app.use(express.json());
 
+// CORS — 위젯은 Vercel 등 다른 오리진(또는 Notion iframe)에서 이 API를 호출한다.
+// 조회 전용 공개 API(쿠키/인증 없음)라 기본은 모든 오리진 허용.
+// WEB_ORIGIN을 지정하면 그 오리진만 허용한다(콤마로 여러 개).
+const allowedOrigins = (process.env.WEB_ORIGIN ?? "*")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes("*")) {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+  } else if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  if (req.method === "OPTIONS") {
+    res.sendStatus(204);
+    return;
+  }
+  next();
+});
+
 const toss = createTossClient(config);
 const quoteCache = new QuoteCache(toss, config.QUOTE_CACHE_TTL_MS);
 const notion = createNotionGateways(config);
