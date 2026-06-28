@@ -1,6 +1,7 @@
 import { useParams, useSearchParams } from "react-router-dom";
 import { getWidgetType } from "../widgets/registry.js";
 import { decodeConfig } from "../store/instances.js";
+import { FitScaler } from "./FitScaler.js";
 
 /**
  * 무상태 임베드 뷰 — Notion iframe에 그대로 들어간다.
@@ -14,5 +15,9 @@ export function Embed() {
 
   if (!def) return <div className="embed-root muted">알 수 없는 위젯: {type}</div>;
 
-  return <div className="embed-root">{def.render(config)}</div>;
+  return (
+    <FitScaler>
+      <div className="embed-root">{def.render(config)}</div>
+    </FitScaler>
+  );
 }

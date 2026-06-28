@@ -314,9 +314,10 @@ function CandleSvg({
 
   const onMove = (e: ReactMouseEvent) => {
     const rect = svgRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
+    if (!rect || rect.width === 0) return;
+    // 렌더 좌표 → viewBox 좌표로 정규화. 임베드 스케일(FitScaler)·width:100%와 무관하게 정확.
+    const mx = ((e.clientX - rect.left) / rect.width) * w;
+    const my = ((e.clientY - rect.top) / rect.height) * H;
     const i = Math.max(0, Math.min(geo.n - 1, Math.round((mx - plotL) / geo.colW - 0.5)));
     setHover({ i, x: geo.x(i), y: my });
   };
