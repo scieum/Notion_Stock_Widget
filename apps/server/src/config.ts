@@ -7,7 +7,10 @@ import { z } from "zod";
 // cwd가 apps/server라 기본 dotenv가 루트 .env를 못 찾는다 → 모듈 위치 기준 해석.
 // src(tsx)와 dist(node) 모두 루트에서 3단계 아래라 경로가 동일하다.
 // Railway 등 .env 없는 환경에선 파일이 없어 no-op(주입된 process.env 사용).
-loadEnv({ path: join(dirname(fileURLToPath(import.meta.url)), "../../../.env") });
+// Vercel(서버리스)에선 .env를 절대 읽지 않는다 — 시크릿/모드는 프로젝트 환경변수로만 주입(C1).
+if (!process.env.VERCEL) {
+  loadEnv({ path: join(dirname(fileURLToPath(import.meta.url)), "../../../.env") });
+}
 
 /**
  * 환경변수는 여기서 한 번만 zod로 파싱한다.
