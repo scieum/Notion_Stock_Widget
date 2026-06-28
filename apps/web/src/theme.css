@@ -171,6 +171,48 @@ body {
   font-weight: 600;
 }
 
+/* ===== App layout: 푸터를 하단에 고정(콘텐츠가 짧아도) ===== */
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+.app-body {
+  flex: 1;
+}
+
+/* ===== 사이트 푸터 (Notion_Graph와 동일) ===== */
+.site-footer {
+  width: 100%;
+  max-width: 1080px;
+  margin: 48px auto 0;
+  padding: 0 24px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--muted-light);
+}
+.footer-brand {
+  font-weight: 600;
+  color: var(--muted);
+}
+.footer-kakao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  /* 카카오 브랜드 컬러(로고 자산) */
+  background: #fee500;
+  transition: opacity 0.15s;
+}
+.footer-kakao:hover {
+  opacity: 0.85;
+}
+
 /* ===== Page / sections ===== */
 .page {
   max-width: 1080px;
