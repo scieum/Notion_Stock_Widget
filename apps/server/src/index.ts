@@ -6,7 +6,12 @@ import { createTossClient } from "./toss/client.js";
 import { QuoteCache } from "./cache/quote-cache.js";
 import { SECURITIES } from "./directory.js";
 import { resolveByQuery, resolveInstrument } from "./instruments.js";
-import { createNotionGateways } from "./notion/factory.js";
+import {
+  createNotionGateways,
+  notionHasToken,
+  resolveStockGateway,
+  resolveWatchlistGateway,
+} from "./notion/factory.js";
 import { resolveWatchlist } from "./watchlist-service.js";
 import { computeEtfAfterHours } from "./etf-service.js";
 import { runSyncCycle } from "./sync-cycle.js";
@@ -34,6 +39,25 @@ function parseTickers(q: unknown): string[] {
     .map((s) => s.trim())
     .filter(Boolean);
 }
+
+/**
+ * Notion DB ID 정규화. 링크/대시 포함 입력에서 32자리 hex만 추출한다.
+ * (사용자가 DB URL을 통째로 붙여넣어도 동작.) 형식이 아니면 undefined.
+ */
+function normalizeNotionId(q: unknown): string | undefined {
+  const m = String(q ?? "")
+    .replace(/-/g, "")
+    .match(/[0-9a-fA-F]{32}/);
+  return m ? m[0] : undefined;
+}
+
+// 서버 Notion 연결 상태 — 위젯 설정 UI 안내용. 토큰 값 자체는 절대 노출하지 않는다(§6/C1).
+app.get("/api/notion/status", (_req, res) => {
+  res.json({
+    hasToken: notionHasToken(config),
+    defaultStockDb: Boolean(config.NOTION_STOCK_DB_ID),
+  });
+});
 
 // [§8.1] 온디맨드 시세 — 단기 캐시. 예: /api/quotes?tickers=005930,NVDA
 app.get("/api/quotes", async (req, res) => {
@@ -67,8 +91,8 @@ app.get("/api/candles", async (req, res) => {
   }
   const ticker = resolveByQuery(raw)?.ticker ?? raw;
   try {
-    const candles = await toss.getCandles(ticker, interval.data, count);
-    res.json({ ticker, interval: interval.data, candles });
+    const { candles, synthetic } = await toss.getCandles(ticker, interval.data, count);
+    res.json({ ticker, interval: interval.data, candles, synthetic });
   } catch (err) {
     log.error("[api] /api/candles 실패", { msg: (err as Error).message });
     res.status(502).json({ error: "candles fetch failed" });
@@ -110,11 +134,17 @@ app.get("/api/resolve", (req, res) => {
 });
 
 // 관심종목 — 별도 '관심종목 DB'에서 읽어 코드/이름 매칭·중복제거·최대 10.
-app.get("/api/watchlist", async (_req, res) => {
+app.get("/api/watchlist", async (req, res) => {
+  const dbId = normalizeNotionId(req.query.dbId);
+  if (req.query.dbId && !dbId) {
+    res.status(400).json({ error: "invalid dbId" });
+    return;
+  }
   try {
-    const entries = await notion.watchlist.listWatchlist();
+    const { gateway, live } = resolveWatchlistGateway(config, notion, dbId);
+    const entries = await gateway.listWatchlist();
     const { items, unresolved } = resolveWatchlist(entries, config.WATCHLIST_MAX);
-    res.json({ items, unresolved, max: config.WATCHLIST_MAX });
+    res.json({ items, unresolved, max: config.WATCHLIST_MAX, source: live ? "live" : "fixture" });
   } catch (err) {
     log.error("[api] /api/watchlist 실패", { msg: (err as Error).message });
     res.status(502).json({ error: "watchlist failed" });
@@ -122,9 +152,16 @@ app.get("/api/watchlist", async (_req, res) => {
 });
 
 // 보유 종목 — 종목 DB 행(국내+국외). 라이브 평가손익은 위젯이 시세로 계산.
-app.get("/api/holdings", async (_req, res) => {
+// ?dbId= 로 위젯별 종목 DB 지정 가능(서버 토큰으로 읽음). 없으면 기본(env) DB.
+app.get("/api/holdings", async (req, res) => {
+  const dbId = normalizeNotionId(req.query.dbId);
+  if (req.query.dbId && !dbId) {
+    res.status(400).json({ error: "invalid dbId" });
+    return;
+  }
   try {
-    const rows = await notion.stock.listStockRows();
+    const { gateway, live } = resolveStockGateway(config, notion, dbId);
+    const rows = await gateway.listStockRows();
     const items = rows.map((r) => {
       const inst = resolveInstrument(r.ticker);
       return {
@@ -137,7 +174,7 @@ app.get("/api/holdings", async (_req, res) => {
         currentPrice: r.currentPrice,
       };
     });
-    res.json({ items });
+    res.json({ items, source: live ? "live" : "fixture" });
   } catch (err) {
     log.error("[api] /api/holdings 실패", { msg: (err as Error).message });
     res.status(502).json({ error: "holdings failed" });

@@ -54,11 +54,17 @@ export interface WatchlistResponse {
   items: WatchlistItem[];
   unresolved: string[];
   max: number;
+  /** live = 실제 Notion DB 연동, fixture = 예시 데이터(미연결) */
+  source?: "live" | "fixture";
 }
 
-/** 별도 '관심종목 DB'에서 코드/이름 매칭된 목록(최대 10). */
-export async function fetchWatchlist(): Promise<WatchlistResponse> {
-  const res = await fetch(api("/api/watchlist"));
+/**
+ * 별도 '관심종목 DB'에서 코드/이름 매칭된 목록(최대 10).
+ * dbId를 주면 그 Notion DB를 읽는다(서버 토큰 사용). 없으면 서버 기본 DB.
+ */
+export async function fetchWatchlist(dbId?: string): Promise<WatchlistResponse> {
+  const qs = dbId ? `?dbId=${encodeURIComponent(dbId)}` : "";
+  const res = await fetch(api(`/api/watchlist${qs}`));
   if (!res.ok) throw new Error(`watchlist ${res.status}`);
   return (await res.json()) as WatchlistResponse;
 }
@@ -73,11 +79,36 @@ export interface HoldingItem {
   currentPrice: number | null;
 }
 
-/** 종목 DB의 보유 종목(국내+국외). 라이브 평가손익은 시세로 위젯이 계산. */
-export async function fetchHoldings(): Promise<HoldingItem[]> {
-  const res = await fetch(api("/api/holdings"));
+export interface HoldingsResult {
+  items: HoldingItem[];
+  /** live = 실제 Notion DB 연동, fixture = 예시 데이터(미연결) */
+  source: "live" | "fixture";
+}
+
+/**
+ * 종목 DB의 보유 종목(국내+국외). 라이브 평가손익은 시세로 위젯이 계산.
+ * dbId를 주면 그 Notion 종목 DB를 읽는다(서버 토큰 사용). 없으면 서버 기본 DB.
+ */
+export async function fetchHoldings(dbId?: string): Promise<HoldingsResult> {
+  const qs = dbId ? `?dbId=${encodeURIComponent(dbId)}` : "";
+  const res = await fetch(api(`/api/holdings${qs}`));
   if (!res.ok) throw new Error(`holdings ${res.status}`);
-  return ((await res.json()) as { items: HoldingItem[] }).items;
+  const data = (await res.json()) as { items: HoldingItem[]; source?: "live" | "fixture" };
+  return { items: data.items, source: data.source ?? "fixture" };
+}
+
+export interface NotionStatus {
+  /** 서버에 NOTION_TOKEN이 설정돼 있는지(값은 노출 안 함). */
+  hasToken: boolean;
+  /** 서버 .env에 기본 종목 DB가 지정돼 있는지. */
+  defaultStockDb: boolean;
+}
+
+/** 서버의 Notion 연결 상태(위젯 DB 연결 안내용). */
+export async function fetchNotionStatus(): Promise<NotionStatus> {
+  const res = await fetch(api("/api/notion/status"));
+  if (!res.ok) throw new Error(`notion status ${res.status}`);
+  return (await res.json()) as NotionStatus;
 }
 
 export interface EtfAfterHoursItem {
@@ -129,6 +160,8 @@ export interface CandleResponse {
   ticker: string;
   interval: CandleInterval;
   candles: Candle[];
+  /** true면 실데이터가 아닌 합성 폴백(fixture 또는 라이브 실패). */
+  synthetic?: boolean;
 }
 
 /** 캔들(OHLCV) — 차트용. ticker는 코드 또는 종목명(서버에서 코드로 해석). */

@@ -13,7 +13,7 @@ import {
   loadInstances,
   type WidgetInstance,
 } from "../store/instances.js";
-import { WidgetFrame } from "./WidgetFrame.js";
+import { renderThumb } from "../widgets/thumbs.js";
 
 export function Home() {
   const navigate = useNavigate();
@@ -49,11 +49,7 @@ export function Home() {
           return (
             <div className="my-card" key={inst.id}>
               <div className="my-preview" onClick={() => navigate(`/edit/${inst.id}`)}>
-                {def ? (
-                  <WidgetFrame>{def.render(inst.config)}</WidgetFrame>
-                ) : (
-                  <span className="muted">알 수 없는 위젯</span>
-                )}
+                {def ? renderThumb(def.id, inst.config) : <span className="muted">알 수 없는 위젯</span>}
               </div>
               <div className="my-meta">
                 <span className="name">{inst.name}</span>
@@ -93,7 +89,7 @@ export function Home() {
                   >
                     {added && <span className="added-badge">추가됨</span>}
                     <div className="explore-thumb" style={{ background: def.accent }}>
-                      <WidgetFrame preview>{def.render(def.defaultConfig)}</WidgetFrame>
+                      {renderThumb(def.id, def.defaultConfig)}
                     </div>
                     <div className="explore-name">{def.name}</div>
                     <div className="muted micro">{def.description}</div>

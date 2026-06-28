@@ -8,15 +8,16 @@ import { money, moveClass, pct, signed, StockLogo } from "./StockLogo.js";
  * 보유 종목(국내+국외) — 종목 DB에서 읽고, 라이브 시세로 평가손익을 즉석 계산.
  * 평단가·수량은 Notion 소유(읽기), 손익은 화면용 오버레이(§5: Notion에 쓰지 않음).
  */
-export function HoldingsWidget({ title }: { title?: string }) {
+export function HoldingsWidget({ title, stockDbId }: { title?: string; stockDbId?: string }) {
   const [items, setItems] = useState<HoldingItem[]>([]);
+  const [source, setSource] = useState<"live" | "fixture">("fixture");
   const [loadErr, setLoadErr] = useState(false);
 
   useEffect(() => {
     let alive = true;
     const load = () =>
-      fetchHoldings()
-        .then((r) => alive && (setItems(r), setLoadErr(false)))
+      fetchHoldings(stockDbId)
+        .then((r) => alive && (setItems(r.items), setSource(r.source), setLoadErr(false)))
         .catch(() => alive && setLoadErr(true));
     load();
     const id = setInterval(load, 30_000);
@@ -24,7 +25,7 @@ export function HoldingsWidget({ title }: { title?: string }) {
       alive = false;
       clearInterval(id);
     };
-  }, []);
+  }, [stockDbId]);
 
   const { quotes, instruments, error } = useMarketData(items.map((h) => h.ticker));
 
@@ -32,7 +33,10 @@ export function HoldingsWidget({ title }: { title?: string }) {
     <div className="w-card">
       <div className="w-head">
         <h3 className="w-title">{title || "내 보유 종목"}</h3>
-        <span className="muted micro">{error || loadErr ? "지연" : "실시간"}</span>
+        <span className="muted micro">
+          {source === "fixture" && <span className="tag warn">예시</span>}
+          {error || loadErr ? "지연" : "실시간"}
+        </span>
       </div>
       <table className="quote-table holdings">
         <thead>

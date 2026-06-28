@@ -13,13 +13,16 @@ export function WatchlistWidget({
   tickers,
   title,
   source,
+  watchlistDbId,
 }: {
   tickers: string[];
   title?: string;
   source?: "notion" | "manual";
+  watchlistDbId?: string;
 }) {
   const isNotion = source === "notion";
   const [items, setItems] = useState<WatchlistItem[]>([]);
+  const [dataSource, setDataSource] = useState<"live" | "fixture">("fixture");
   const [loadErr, setLoadErr] = useState(false);
   // 클릭한 종목 — 있으면 세부(캔들 차트) 화면으로 전환.
   const [sel, setSel] = useState<{ ticker: string; name: string } | null>(null);
@@ -32,7 +35,10 @@ export function WatchlistWidget({
       tickers.map((t) => ({ ticker: t, name: t, market: "domestic", currency: "KRW" }));
     const load = () =>
       (isNotion
-        ? fetchWatchlist().then((r) => r.items)
+        ? fetchWatchlist(watchlistDbId).then((r) => {
+            if (alive) setDataSource(r.source ?? "fixture");
+            return r.items;
+          })
         : fetchResolve(tickers).then((r) => [
             ...r.items,
             // 못 찾은 입력도 코드일 수 있으니 그대로 노출(시세 없으면 — 표시)
@@ -48,7 +54,7 @@ export function WatchlistWidget({
       if (id) clearInterval(id);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isNotion, manualKey]);
+  }, [isNotion, manualKey, watchlistDbId]);
 
   const tickerList = items.map((r) => r.ticker);
   const { quotes, instruments, error, updatedAt } = useMarketData(tickerList);
@@ -71,7 +77,10 @@ export function WatchlistWidget({
       <div className="w-head">
         <h3 className="w-title">{title || "관심종목"}</h3>
         {(updatedAt || isNotion) && (
-          <span className="muted micro">{error || loadErr ? "지연" : "실시간"}</span>
+          <span className="muted micro">
+            {isNotion && dataSource === "fixture" && <span className="tag warn">예시</span>}
+            {error || loadErr ? "지연" : "실시간"}
+          </span>
         )}
       </div>
       <table className="quote-table tap">

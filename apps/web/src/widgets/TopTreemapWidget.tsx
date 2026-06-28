@@ -6,7 +6,7 @@ import { money, pct, signed } from "./StockLogo.js";
 
 /** 좌표 공간(가상). 화면에는 % 로 환산해 반응형으로 렌더. */
 const SPACE: Rect = { x: 0, y: 0, w: 1000, h: 680 };
-const HEADER = 22; // 섹터 라벨 높이(가상 단위)
+const HEADER = 28; // 섹터 라벨 높이(가상 단위) — 라벨이 셀과 겹치지 않도록 띠 확보
 
 /** 등락률 → 셀 배경(상승=빨강/하락=파랑, ±5% 상한). 색은 변수로(§9). */
 function cellBg(r: number): string {
@@ -113,7 +113,7 @@ export function TopTreemapWidget({ market, title }: { market: Market; title?: st
               background: cellBg(q.changeRate),
             }}
           >
-            <span className="tm-tk">{q.ticker}</span>
+            <span className="tm-nm">{q.name}</span>
             <span className="tm-pc">{pct(q.changeRate)}</span>
           </div>
         ))}

@@ -5,6 +5,7 @@ import { EtfAfterHoursWidget } from "./EtfAfterHoursWidget.js";
 import { FearGreedWidget } from "./FearGreedWidget.js";
 import { HeatmapWidget } from "./HeatmapWidget.js";
 import { HoldingsWidget } from "./HoldingsWidget.js";
+import { PortfolioSummaryWidget } from "./PortfolioSummaryWidget.js";
 import { TickerWidget } from "./TickerWidget.js";
 import { TopTableWidget } from "./TopTableWidget.js";
 import { TopTreemapWidget } from "./TopTreemapWidget.js";
@@ -21,10 +22,15 @@ export interface WidgetConfig {
   source?: "notion" | "manual";
   /** candle 용 — 기본 간격(틱/1분/일/주/월) */
   interval?: CandleInterval;
+  /** holdings / portfolio-summary 용 — 연결할 Notion 종목 DB ID(비우면 서버 기본). */
+  stockDbId?: string;
+  /** watchlist 용 — 연결할 Notion 관심종목 DB ID(비우면 서버 기본). */
+  watchlistDbId?: string;
 }
 
 export type WidgetTypeId =
   | "watchlist"
+  | "portfolio-summary"
   | "ticker"
   | "heatmap"
   | "holdings"
@@ -46,7 +52,8 @@ export type ConfigField =
   | { kind: "text"; key: "title"; label: string; placeholder?: string }
   | { kind: "tickers"; key: "tickers"; label: string }
   | { kind: "ticker"; key: "ticker"; label: string }
-  | { kind: "source"; key: "source"; label: string };
+  | { kind: "source"; key: "source"; label: string }
+  | { kind: "notion-db"; key: "stockDbId" | "watchlistDbId"; label: string };
 
 export interface WidgetTypeDef {
   id: WidgetTypeId;
@@ -69,6 +76,19 @@ export interface ComingSoonDef {
 
 export const WIDGET_TYPES: WidgetTypeDef[] = [
   {
+    id: "portfolio-summary",
+    name: "내 자산 요약",
+    description: "보유 종목을 통화별로 묶어 총 평가금액·평가손익·수익률을 한눈에",
+    category: "내 자산",
+    accent: "#eef4ff",
+    defaultConfig: { title: "내 자산 요약" },
+    fields: [
+      { kind: "text", key: "title", label: "제목", placeholder: "내 자산 요약" },
+      { kind: "notion-db", key: "stockDbId", label: "Notion 종목 DB" },
+    ],
+    render: (cfg) => <PortfolioSummaryWidget title={cfg.title} stockDbId={cfg.stockDbId} />,
+  },
+  {
     id: "watchlist",
     name: "관심종목",
     description: "관심종목 DB 자동 연동(코드·이름 매칭, 최대 10) 또는 직접 입력",
@@ -78,10 +98,16 @@ export const WIDGET_TYPES: WidgetTypeDef[] = [
     fields: [
       { kind: "text", key: "title", label: "제목", placeholder: "관심종목" },
       { kind: "source", key: "source", label: "종목 소스" },
+      { kind: "notion-db", key: "watchlistDbId", label: "Notion 관심종목 DB" },
       { kind: "tickers", key: "tickers", label: "종목 코드(직접 입력 시)" },
     ],
     render: (cfg) => (
-      <WatchlistWidget tickers={cfg.tickers ?? []} title={cfg.title} source={cfg.source ?? "notion"} />
+      <WatchlistWidget
+        tickers={cfg.tickers ?? []}
+        title={cfg.title}
+        source={cfg.source ?? "notion"}
+        watchlistDbId={cfg.watchlistDbId}
+      />
     ),
   },
   {
@@ -91,8 +117,11 @@ export const WIDGET_TYPES: WidgetTypeDef[] = [
     category: "내 자산",
     accent: "#f0fbf3",
     defaultConfig: { title: "내 보유 종목" },
-    fields: [{ kind: "text", key: "title", label: "제목", placeholder: "내 보유 종목" }],
-    render: (cfg) => <HoldingsWidget title={cfg.title} />,
+    fields: [
+      { kind: "text", key: "title", label: "제목", placeholder: "내 보유 종목" },
+      { kind: "notion-db", key: "stockDbId", label: "Notion 종목 DB" },
+    ],
+    render: (cfg) => <HoldingsWidget title={cfg.title} stockDbId={cfg.stockDbId} />,
   },
   {
     id: "etf-afterhours",

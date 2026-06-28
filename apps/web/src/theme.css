@@ -232,10 +232,12 @@ body {
 .my-preview {
   height: 150px;
   overflow: hidden;
-  padding: 10px;
+  padding: 16px;
   cursor: pointer;
   border-bottom: 1px solid var(--border);
   background: var(--bg-alt);
+  display: flex;
+  align-items: center;
 }
 .my-meta {
   display: flex;
@@ -304,6 +306,78 @@ body {
   transform: scale(0.92);
   transform-origin: top left;
   width: 108%;
+}
+
+/* ===== 썸네일(핵심 요소 1개) ===== */
+.thumb {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+}
+.thumb-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.thumb-value {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums lining-nums;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.thumb-value.name {
+  font-size: 19px;
+}
+.thumb-sub {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--muted);
+}
+.thumb-cells {
+  display: flex;
+  gap: 5px;
+  width: 100%;
+  margin-top: 2px;
+}
+.thumb-cell {
+  flex: 1;
+  border-radius: 6px;
+  padding: 10px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.thumb-tm {
+  display: flex;
+  gap: 3px;
+  width: 100%;
+  height: 60px;
+  margin-top: 2px;
+}
+.thumb-tm > span {
+  border-radius: 4px;
+  min-width: 4px;
+}
+.thumb-spark {
+  width: 100%;
+  height: 38px;
+  margin-top: 4px;
+  overflow: visible;
 }
 
 /* ===== Widget: shared card ===== */
@@ -458,6 +532,52 @@ body {
   margin: 8px 0 0;
 }
 
+/* ===== 내 자산 요약 ===== */
+.pf-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+.pf-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-alt);
+}
+.pf-grp-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.pf-grp-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.pf-value {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.01em;
+}
+.pf-stats {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.pf-pnl {
+  font-size: 14px;
+  font-weight: 600;
+}
+.pf-ret {
+  font-size: 13px;
+  font-weight: 600;
+}
+
 /* ===== Editor ===== */
 .back {
   text-decoration: none;
@@ -583,6 +703,18 @@ body {
 .tag.warn {
   color: var(--down);
 }
+/* w-head 안의 상태 태그(예: "예시")는 우측 상태 텍스트와 약간 띄운다 */
+.w-head .tag {
+  margin-right: 6px;
+}
+/* 캔들 차트 헤더의 "예시" 태그는 종목코드 뒤에 약간 띄운다 */
+.chart-id-text .tag {
+  margin-left: 6px;
+}
+/* DB 연결 경고 안내문 */
+.field-warn {
+  color: var(--up);
+}
 
 /* 더보기 버튼 */
 .more-btn {
@@ -615,20 +747,25 @@ body {
 .tm-sector {
   position: absolute;
   border: 1px solid var(--bg);
-  overflow: hidden;
+  /* 섹터 라벨이 셀 위에 보이도록 셀보다 위 레이어. 마우스는 통과시켜 셀 호버 유지 */
+  z-index: 2;
+  pointer-events: none;
 }
 .tm-sector-label {
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
-  padding: 3px 5px;
+  max-width: 100%;
+  padding: 2px 6px;
   font-size: 10px;
   font-weight: 700;
   color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  /* 셀 위에 겹쳐도 읽히도록 배경 칩 */
+  background: var(--bg-alt);
+  border-bottom-right-radius: 5px;
 }
 .tm-cell {
   position: absolute;
@@ -641,8 +778,9 @@ body {
   align-items: center;
   line-height: 1.1;
   padding: 1px;
+  z-index: 1;
 }
-.tm-tk {
+.tm-nm {
   font-size: 10px;
   font-weight: 700;
   color: rgba(0, 0, 0, 0.82);
@@ -650,6 +788,7 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding: 0 2px;
 }
 .tm-pc {
   font-size: 9px;

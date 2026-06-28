@@ -89,6 +89,7 @@ export function CandleChartWidget({
   const [name, setName] = useState(ticker);
   const [zoom, setZoom] = useState(() => toZoom(initialInterval));
   const [candles, setCandles] = useState<Candle[]>([]);
+  const [synthetic, setSynthetic] = useState(false);
   const [err, setErr] = useState(false);
 
   const { interval, visible } = useMemo(() => fromZoom(zoom), [zoom]);
@@ -115,7 +116,7 @@ export function CandleChartWidget({
     let alive = true;
     const load = () =>
       fetchCandles(code, interval, FETCH_COUNT)
-        .then((r) => alive && (setCandles(r.candles), setErr(false)))
+        .then((r) => alive && (setCandles(r.candles), setSynthetic(!!r.synthetic), setErr(false)))
         .catch(() => alive && setErr(true));
     load();
     const id = window.setInterval(load, POLL_MS[interval]);
@@ -139,7 +140,10 @@ export function CandleChartWidget({
           <StockLogo ticker={code} name={inst?.name ?? name} url={inst?.logoUrl} size={26} />
           <div className="chart-id-text">
             <span className="name">{title || inst?.name || name}</span>
-            <span className="muted micro">{code}</span>
+            <span className="muted micro">
+              {code}
+              {synthetic && <span className="tag warn" title="실데이터 연결 실패 — 합성(예시) 캔들입니다">예시</span>}
+            </span>
           </div>
         </div>
         <ChartPrice candles={shown} currency={currency} err={err} />

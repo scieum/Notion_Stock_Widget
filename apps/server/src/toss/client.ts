@@ -31,8 +31,15 @@ export interface TossClient {
   getHoldings(): Promise<TossHolding[]>;
   /** 국내/국외 시장 규모 상위 100 랭킹(트리맵·표용). */
   getTopMovers(market: Market): Promise<RankedQuote[]>;
-  /** 캔들(OHLCV) — 차트용. 간격별 count개, 오래된→최신 순. */
-  getCandles(ticker: string, interval: CandleInterval, count: number): Promise<Candle[]>;
+  /**
+   * 캔들(OHLCV) — 차트용. 간격별 count개, 오래된→최신 순.
+   * `synthetic`=true면 실데이터가 아닌 합성 폴백(fixture 모드 또는 라이브 실패).
+   */
+  getCandles(
+    ticker: string,
+    interval: CandleInterval,
+    count: number,
+  ): Promise<{ candles: Candle[]; synthetic: boolean }>;
 }
 
 /** 간격별 봉 간격(ms) — fixture 합성·라이브 폴백의 시각 스탬프용. */
@@ -219,7 +226,8 @@ export function createFixtureTossClient(now: () => number = Date.now): TossClien
       });
     },
     async getCandles(ticker, interval, count) {
-      return synthCandles(ticker, interval, count, now());
+      // fixture 모드는 전부 합성 데이터.
+      return { candles: synthCandles(ticker, interval, count, now()), synthetic: true };
     },
   };
 }
@@ -493,7 +501,9 @@ export function createLiveTossClient(config: Config): TossClient {
 
     async getCandles(ticker, interval, count) {
       // 코드 형식이 아니면(한글명 등) 토스 호출 불가 → 바로 합성.
-      if (!TOSS_SYMBOL.test(ticker)) return synthCandles(ticker, interval, count, Date.now());
+      if (!TOSS_SYMBOL.test(ticker)) {
+        return { candles: synthCandles(ticker, interval, count, Date.now()), synthetic: true };
+      }
       try {
         const token = TOSS_INTERVAL[interval];
         const json = await withRetry(() =>
@@ -529,7 +539,7 @@ export function createLiveTossClient(config: Config): TossClient {
         if (candles.length > 0) {
           // 토스 응답은 최신순 → 오래된→최신으로 정렬.
           candles.sort((a, b) => a.time - b.time);
-          return candles.slice(-count);
+          return { candles: candles.slice(-count), synthetic: false };
         }
         log.warn("[toss] 캔들 빈 응답 — 합성 폴백", { ticker, interval });
       } catch (err) {
@@ -539,7 +549,7 @@ export function createLiveTossClient(config: Config): TossClient {
           msg: (err as Error).message,
         });
       }
-      return synthCandles(ticker, interval, count, Date.now());
+      return { candles: synthCandles(ticker, interval, count, Date.now()), synthetic: true };
     },
   };
 }
